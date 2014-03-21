@@ -1,0 +1,107 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.artemis.vcloudplus.handle;
+
+import java.util.HashMap;
+import java.util.concurrent.TimeoutException;
+
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.Duration;
+import javax.xml.datatype.XMLGregorianCalendar;
+
+import org.artemis.vcloudplus.common.VCloud;
+
+import com.vmware.vcloud.api.rest.schema.LeaseSettingsSectionType;
+import com.vmware.vcloud.api.rest.schema.ReferenceType;
+import com.vmware.vcloud.sdk.Task;
+import com.vmware.vcloud.sdk.VCloudException;
+import com.vmware.vcloud.sdk.Vapp;
+import com.vmware.vcloud.sdk.Vdc;
+
+/**
+ * VAppHandle TODO VAppHandle.java is written at Sep 29, 2013
+ * 
+ * @author junli
+ */
+public class VAppHandle extends VCloud {
+	
+	public boolean ResetLease(Vdc iVdc, String strVAppName) {
+		try {
+			HashMap<String, ReferenceType>  lVAppRefs = iVdc.getVappRefsByName();
+			if (lVAppRefs.isEmpty()) {
+				System.out.println("there is no vApp in current DC");
+				return false;
+			}
+			System.out.println("VApps:");
+			for (String vAppName : lVAppRefs.keySet()) {
+				System.out.println("	" + vAppName);
+			}
+			
+			ReferenceType lReferenceType = lVAppRefs.get(strVAppName);
+			if (lReferenceType == null) {
+				System.out.println("there is no vApp in current DC which is named: " + strVAppName);
+				return false;
+			}
+			
+			Vapp lVapp = VCloud.getVApp(lReferenceType);
+			LeaseSettingsSectionType lLeaseSettingsSectionType = lVapp.getLeaseSettingsSection();
+			
+			XMLGregorianCalendar lXMLGregorianCalendar = lLeaseSettingsSectionType.getStorageLeaseExpiration();
+			if (lXMLGregorianCalendar == null) {
+				
+				lLeaseSettingsSectionType.setDeploymentLeaseInSeconds(60 * 60 * 24 * 7);
+				lLeaseSettingsSectionType.setStorageLeaseInSeconds(60 * 60 * 24 * 30);
+				
+			} else {
+				// for storage 30 days
+				Duration lStorageDuration = DatatypeFactory.newInstance().newDuration(true, 0, 0, 30, 0, 0, 0);
+				lXMLGregorianCalendar.add(lStorageDuration);
+				lLeaseSettingsSectionType.setStorageLeaseExpiration(lXMLGregorianCalendar);
+				
+				// for deployment 7 days
+				Duration lDeploymentDuration = DatatypeFactory.newInstance().newDuration(true, 0, 0, 7, 0, 0, 0);
+				XMLGregorianCalendar lDeloymentXMLGregorianCalendar = lLeaseSettingsSectionType.getDeploymentLeaseExpiration();
+				lXMLGregorianCalendar.add(lDeploymentDuration);
+				lLeaseSettingsSectionType.setStorageLeaseExpiration(lDeloymentXMLGregorianCalendar);
+			}
+			
+			// create update task
+			Task lUpdateTask = lVapp.updateSection(lLeaseSettingsSectionType);
+			long lTaskTimeout = 1000 * 60 * 30;
+			
+			lUpdateTask.waitForTask(lTaskTimeout);
+			return true;
+		} catch (TimeoutException e) {
+			e.printStackTrace();
+			System.out.println("update lease is failed!");
+		} catch (VCloudException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (DatatypeConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		
+		return false;
+	}
+	
+}

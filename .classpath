@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/amqp-client-2.3.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/httpclient-4.1.jar"/>
+	<classpathentry kind="lib" path="lib/httpcore-4.1.jar"/>
+	<classpathentry kind="lib" path="lib/rest-api-schemas-5.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/sqlite-jdbc-3.7.2.jar"/>
+	<classpathentry kind="lib" path="lib/vcloud-java-sdk-5.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/c3p0-0.9.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar"/>
+	<classpathentry kind="lib" path="lib/quartz-2.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/quartz-jobs-2.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.6.6.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.6.6.jar"/>
+	<classpathentry kind="lib" path="lib/junit-3.8.1.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
