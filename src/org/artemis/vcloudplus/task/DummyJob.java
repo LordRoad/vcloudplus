@@ -17,31 +17,27 @@
  */
 package org.artemis.vcloudplus.task;
 
-import org.artemis.vcloudplus.run.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 
 /**
- * VCloudTask TODO
- * VCloudTask.java is written at Sep 29, 2013
+ * DummyJob TODO
+ * DummyJob.java is written at Mar 25, 2014
  * @author junli
  */
-public abstract class VCloudTask extends Task {
-	private final Logger log = LoggerFactory.getLogger(getClass());
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public abstract void runTask() throws Exception;
-	
-	
+public class DummyJob implements Job {
+
 	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
+	 * @see org.quartz.Job#execute(org.quartz.JobExecutionContext)
 	 */
 	@Override
-	public void run() {
-		log.trace(this.getTaskName() + " is running");
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		
+		System.out.println(context.getFireInstanceId() + 
+				" des: " +
+				context.getJobDetail().getDescription());
 		
 	}
 

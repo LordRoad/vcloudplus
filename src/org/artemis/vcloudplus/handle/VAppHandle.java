@@ -26,6 +26,8 @@ import javax.xml.datatype.Duration;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.artemis.vcloudplus.common.VCloud;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.vmware.vcloud.api.rest.schema.LeaseSettingsSectionType;
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
@@ -40,22 +42,25 @@ import com.vmware.vcloud.sdk.Vdc;
  * @author junli
  */
 public class VAppHandle extends VCloud {
+	private final Logger log = LoggerFactory.getLogger(getClass());
 	
 	public boolean ResetLease(Vdc iVdc, String strVAppName) {
 		try {
 			HashMap<String, ReferenceType>  lVAppRefs = iVdc.getVappRefsByName();
 			if (lVAppRefs.isEmpty()) {
-				System.out.println("there is no vApp in current DC");
+				log.warn("there is no vApp in current DC");
 				return false;
 			}
-			System.out.println("VApps:");
+			
+			String lVApp = "VApps: ";
 			for (String vAppName : lVAppRefs.keySet()) {
-				System.out.println("	" + vAppName);
+				lVApp += vAppName + ", ";
 			}
+			log.info(lVApp);
 			
 			ReferenceType lReferenceType = lVAppRefs.get(strVAppName);
 			if (lReferenceType == null) {
-				System.out.println("there is no vApp in current DC which is named: " + strVAppName);
+				log.warn("there is no vApp in current DC which is named: " + strVAppName);
 				return false;
 			}
 			
@@ -88,19 +93,16 @@ public class VAppHandle extends VCloud {
 			lUpdateTask.waitForTask(lTaskTimeout);
 			return true;
 		} catch (TimeoutException e) {
-			e.printStackTrace();
-			System.out.println("update lease is failed!");
+			log.error(e.getLocalizedMessage());
 		} catch (VCloudException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getLocalizedMessage());
 		} catch (DatatypeConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getLocalizedMessage());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getLocalizedMessage());
 		} 
 		
+		log.warn("update lease is failed!");
 		return false;
 	}
 	

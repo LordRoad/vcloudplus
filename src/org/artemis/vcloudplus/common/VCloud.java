@@ -24,6 +24,9 @@ import java.security.UnrecoverableKeyException;
 import java.util.HashMap;
 import java.util.logging.Level;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
 import com.vmware.vcloud.sdk.Organization;
 import com.vmware.vcloud.sdk.VCloudException;
@@ -40,6 +43,8 @@ import com.vmware.vcloud.sdk.samples.FakeSSLSocketFactory;
  * @author junli
  */
 public class VCloud {
+	private static Logger log = LoggerFactory.getLogger(VCloud.class.getName());
+	
 	protected static VcloudClient sVCloudClient = null;
 	private static HashMap<String, ReferenceType> sOrgNameMap = null;
 
@@ -65,7 +70,7 @@ public class VCloud {
 			return sOrgNameMap;
 		}
 		VcloudClient.setLogLevel(Level.OFF);
-		// VcloudClient.setLogLevel(Level.ALL);
+		//VcloudClient.setLogLevel(Level.INFO);
 
 		sVCloudClient = new VcloudClient(vCloudURL, Version.V5_1);
 		sVCloudClient.registerScheme("https", 443,
@@ -75,7 +80,7 @@ public class VCloud {
 		if (!sOrgNameMap.isEmpty()) {
 
 		} else {
-			System.out.println("	Invalid login for user " + username);
+			log.error("Invalid login for user " + username);
 			return null;
 		}
 
@@ -111,7 +116,8 @@ public class VCloud {
 		Organization org = Organization.getOrganizationByReference(
 				sVCloudClient, orgRef);
 		ReferenceType vdcRef = org.getVdcRefByName(vdcName);
-		System.out.println("VDC - " + vdcRef.getName());
+		
+		log.info("VDC - " + vdcRef.getName());
 		return Vdc.getVdcByReference(sVCloudClient, vdcRef);
 	}
 
@@ -128,7 +134,6 @@ public class VCloud {
 			Vapp lVapp = Vapp.getVappByReference(sVCloudClient, iReferenceType);
 			return lVapp;
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw e;
 		}
 	}

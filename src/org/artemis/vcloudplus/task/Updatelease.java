@@ -17,9 +17,19 @@
  */
 package org.artemis.vcloudplus.task;
 
+import java.util.HashMap;
+
+import org.artemis.vcloudplus.common.VCloud;
+import org.artemis.vcloudplus.handle.VAppHandle;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.vmware.vcloud.api.rest.schema.ReferenceType;
+import com.vmware.vcloud.sdk.VCloudException;
+import com.vmware.vcloud.sdk.Vdc;
 
 /**
  * Updatelease update cloud lease and it's used to test quartz
@@ -27,7 +37,8 @@ import org.quartz.JobExecutionException;
  * @author junli
  */
 public class Updatelease implements Job {
-
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	
 	public static String sUpdatedTimes = "UpdatedTimes";
 	
 	/*
@@ -36,12 +47,58 @@ public class Updatelease implements Job {
 	 */
 	@Override
 	public void execute(JobExecutionContext iJEC) throws JobExecutionException {
-		
-		int lCurrentTimes = iJEC.getJobDetail().getJobDataMap().getInt(sUpdatedTimes);
-		if () {
+	//	try {
 			
+			System.out.println("execute job");
+			return;
+		/*	
+			String lVCloudURL = "https://tech-cloud.microstrategy.com";
+			log.trace("vcloud url: " + lVCloudURL);
+			String lUserName = "junli@technology";
+			log.trace("vcloud user: " + lUserName);
+			String lUserPwd = "Return_jun!";
+
+			HashMap<String, ReferenceType> lOrgMap = VCloud.VCloudLogin(
+					lVCloudURL, lUserName, lUserPwd);
+			if (lOrgMap.isEmpty()) {
+				log.warn("there is no organization in current vcloud: "
+								+ lVCloudURL);
+				return;
+			}
+
+			String lOrgName = "Technology";
+			log.info("Organizations: ");
+			for (String organizationName : lOrgMap.keySet()) {
+				log.info(organizationName + ", ");
+				if (organizationName.contains("Tech")) {
+					lOrgName = organizationName;
+				}
+			}
+
+			String lDCName = "Technology";
+			Vdc lVdc = VCloud.findVdc(lOrgName, lDCName);
+			if (lVdc == null) {
+				log.warn("there is no data center in current organization: "
+								+ lOrgName);
+				return;
+			}
+
+			VAppHandle lVAppHandle = new VAppHandle();
+			if (lVAppHandle.ResetLease(lVdc, "vApp_junli_2k864")) {
+				log.info("reset is done");
+			}
+		} catch (Exception e) {
+			log.error(e.getLocalizedMessage());
+			e.printStackTrace();
+		} finally {
+			try {
+				VCloud.VCloudLogout();
+			} catch (VCloudException e) {
+				log.error(e.getLocalizedMessage());
+				e.printStackTrace();
+			}
 		}
-		
+		*/
 	}
 
 }

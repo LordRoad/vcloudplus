@@ -20,6 +20,8 @@ package org.artemis.vcloudplus.task;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * UpdateleaseListener TODO
@@ -27,7 +29,8 @@ import org.quartz.JobListener;
  * @author junli
  */
 public class UpdateleaseListener implements JobListener {
-
+	private final Logger log = LoggerFactory.getLogger(getClass());
+	
 	/* (non-Javadoc)
 	 * @see org.quartz.JobListener#getName()
 	 */
@@ -41,8 +44,7 @@ public class UpdateleaseListener implements JobListener {
 	 */
 	@Override
 	public void jobExecutionVetoed(JobExecutionContext arg0) {
-		
-
+		log.info(this.getName() + " is vetoed");
 	}
 
 	/* (non-Javadoc)
@@ -50,8 +52,7 @@ public class UpdateleaseListener implements JobListener {
 	 */
 	@Override
 	public void jobToBeExecuted(JobExecutionContext arg0) {
-		
-
+		log.info(this.getName() + " is to be executed");
 	}
 
 	/* (non-Javadoc)
@@ -60,8 +61,7 @@ public class UpdateleaseListener implements JobListener {
 	@Override
 	public void jobWasExecuted(JobExecutionContext arg0,
 			JobExecutionException arg1) {
-		
-
+		log.info(this.getName() + " was executed");
 	}
 
 }

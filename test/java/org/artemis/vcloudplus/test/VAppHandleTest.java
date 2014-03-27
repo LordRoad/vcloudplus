@@ -40,7 +40,7 @@ public class VAppHandleTest {
 		try {
 			String lVCloudURL = "https://tech-cloud.microstrategy.com";
 			String lUserName = "junli@technology";
-			String lUserPwd = "Return_jun^";
+			String lUserPwd = "Return_jun!";
 			
 			HashMap<String, ReferenceType> lOrgMap = VCloud.VCloudLogin(lVCloudURL, lUserName, lUserPwd);
 			if (lOrgMap.isEmpty()) {
@@ -65,7 +65,9 @@ public class VAppHandleTest {
 			}
 			
 			VAppHandle lVAppHandle = new VAppHandle();
-			lVAppHandle.ResetLease(lVdc, "vApp_junli_2k864");
+			if (lVAppHandle.ResetLease(lVdc, "vApp_junli_2k864")) {
+				System.out.println("reset is done");
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {

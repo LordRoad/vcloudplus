@@ -15,34 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.artemis.vcloudplus.task;
+package org.artemis.vcloudplus.common;
 
-import org.artemis.vcloudplus.run.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.quartz.listeners.JobListenerSupport;
 
 /**
- * VCloudTask TODO
- * VCloudTask.java is written at Sep 29, 2013
+ * BasicJobListener TODO
+ * BasicJobListener.java is written at Mar 25, 2014
  * @author junli
  */
-public abstract class VCloudTask extends Task {
-	private final Logger log = LoggerFactory.getLogger(getClass());
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	public abstract void runTask() throws Exception;
-	
-	
+public class BasicJobListener extends JobListenerSupport {
+
 	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
+	 * @see org.quartz.JobListener#getName()
 	 */
 	@Override
-	public void run() {
-		log.trace(this.getTaskName() + " is running");
-		
+	public String getName() {
+		return BasicJobListener.class.getName();
 	}
 
 }
