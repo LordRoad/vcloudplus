@@ -18,29 +18,39 @@
 package org.artemis.vcloudplus.common;
 
 /**
- * SystemConfig TODO
+ * SystemConfig system configure for vcloud plus
  * SystemConfig.java is written at Mar 26, 2014
  * @author junli
  */
 public class SystemConfig {
 
 	/**
-	 * DB parameters
-	 * 	org.quartz.dataSource.myDS.driver: com.mysql.jdbc.Driver
-		org.quartz.dataSource.myDS.URL: jdbc:mysql://localhost:3306/quartz
-		org.quartz.dataSource.myDS.user: root
-		org.quartz.dataSource.myDS.password:
-		org.quartz.dataSource.myDS.maxConnections: 5
-		org.quartz.dataSource.myDS.validationQuery: select 0
+	 * default values
 	 */
-	public static String sDataSourceConfig = "org.quartz.dataSource";
-	public static String sDataSource = "org.quartz.jobStore.dataSource";
-	public static String sDataSourceDriver = "driver";
-	public static String sDataSourceURL = "URL";
-	public static String sDataSourceUser = "user";
-	public static String sDataSourcePasswd = "password";
-	public static String sDataSourceValidationQuery = "validationQuery";
+	public static int sDefaultVCloudPlusJobUpdateIntervalInHours = 120;
+	public static int sDefaultVCloudPlusJobMonitorIntervalInMinutes = 60;
+	public static int sDefaultVCloudPlusDeploymentLease = 7;
+	public static int sDefaultVCloudPlusStorageLease = 30;
 	
+	/**
+	 * VCloudPlus configure
+	 */
+	public static String sVCloudPlusGroup = "org.vcloudplus.vcloud";
+	public static String sVCloudPlusURL = "url";
+	public static String sVCloudPlusUser = "user";
+	public static String sVCloudPlusPasswd = "password";
+	public static String sVCloudPlusOrg = "org";
+	public static String sVCloudPlusDC = "datacenter";
+	public static String sVCloudPlusVApp = "vapp";
+	public static String sVCloudPlusStorage = "storage";
+	public static String sVCloudPlusDeployment = "deployment";
+	
+	/**
+	 * Job configure
+	 */
+	public static String sVCloudPlusJobGroup = "org.vcloudplus.vcloud.job";
+	public static String sVCloudPlusJobUpdateIntervalInHours = "updateIntervalInHours";
+	public static String sVCloudPlusJobMonitorIntervalInMinutes = "monitorIntervalInHours";
 	
 	
 	

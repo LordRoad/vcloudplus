@@ -179,6 +179,9 @@ public class ClusterMgt implements Job {
 			} catch (SQLException e) {
 				log.warn("Cloud not connect: " + e.getLocalizedMessage());
 				return false;
+			} catch (Exception e) {
+				log.warn("Cloud not connect: " + e.getLocalizedMessage());
+				return false;
 			}
 		}
 		
@@ -210,9 +213,10 @@ public class ClusterMgt implements Job {
 				props.load(in);
 			}
 			if (!initDataSources(props)) {
-
+				// db still can not be connected, continue running in-memory mode
+				log.info("db still can not be connected, continue running in-memory mode");
 			}
-
+			
 		} catch (FileNotFoundException e) {
 			log.warn(e.getLocalizedMessage());
 	

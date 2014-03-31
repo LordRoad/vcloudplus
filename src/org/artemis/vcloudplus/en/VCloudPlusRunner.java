@@ -17,8 +17,14 @@
  */
 package org.artemis.vcloudplus.en;
 
+import java.util.Observable;
+import java.util.Observer;
+
 import org.artemis.vcloudplus.common.BasicScheduleListener;
+import org.artemis.vcloudplus.common.SystemConfig;
+import org.artemis.vcloudplus.task.ClusterMgt;
 import org.artemis.vcloudplus.task.Updatelease;
+import org.artemis.vcloudplus.util.ConfigureReader;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -30,30 +36,40 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.SimpleTrigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.utils.PropertiesParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * VCloudPlusRunner TODO
+ * VCloudPlusRunner vcloudplus runner
  * VCloudPlusRunner.java is written at Mar 25, 2014
  * @author junli
  */
-public final class VCloudPlusRunner implements Runnable {
+public final class VCloudPlusRunner implements Observer, Runnable  {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	
 	public static String sLog4J = "log4j.configuration";
+	public static String sDefaultLog4JPath = "file:" + System.getProperty("user.dir") + "/config/log4j.properties";
+	
+	public static String sVCloudPlus = "vcloudplus.properties";
+	public static String sDefaultVCloudPlusPath = System.getProperty("user.dir") + "/config/vcloudplus.properties";
+	
 	public static String sQuartz = "org.quartz.properties";
+	public static String sDefaultQuartzPath = System.getProperty("user.dir") + "/config/quartz_node.properties";
 	
 	public static String sDefaultVCloudJobGroup = "VCloudPlus";
 	private static String sDefaultVCloudTriggerGroup = "VCloudPlus";
+	
+	public static String sJobExt = "_job";
+	public static String sTriggerExt = "_trigger";
 	
 	private VCloudPlusStatus mPersistenceError = VCloudPlusStatus.NONE;
 	
 	/**
 	 * VCloudPlusStatus:
 	 * NONE, normal ended, always exception is thrown
-	 * NeedInCluster, cluster envrionment is detected, need add current node into cluster
-	 * NeedInMemory, cluster envrionment is unreachable (PersistenceException)
+	 * NeedInCluster, cluster environment is detected, need add current node into cluster
+	 * NeedInMemory, cluster environment is unreachable (PersistenceException)
 	 * 				need run current node in memory 
 	 */
 	public enum VCloudPlusStatus {
@@ -66,28 +82,83 @@ public final class VCloudPlusRunner implements Runnable {
 		return mPersistenceError;
 	}
 	
+	
+	
 	@Override
 	public void run() {
 		try {
 			SchedulerFactory sf = new StdSchedulerFactory();
 	        Scheduler lStdScheduler = sf.getScheduler();
-		
-			JobDetail lTestingJob = JobBuilder.newJob(Updatelease.class)
-				.withIdentity(Updatelease.class.getName() + "_job", sDefaultVCloudJobGroup)
-				.requestRecovery()
+	        
+	        ConfigureReader lConfigureReader = new ConfigureReader();
+	        PropertiesParser lPropertiesParser = lConfigureReader.GetGroup(System.getProperty(VCloudPlusRunner.sVCloudPlus), 
+	        		SystemConfig.sVCloudPlusJobGroup);
+	        
+	        int lUpdateIntervalInHours = SystemConfig.sDefaultVCloudPlusJobUpdateIntervalInHours;
+	        int lMonitorInervalInMinutes = SystemConfig.sDefaultVCloudPlusJobMonitorIntervalInMinutes;
+	        if (lPropertiesParser != null) {
+	        	try {
+	        		lUpdateIntervalInHours = lPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobUpdateIntervalInHours);
+	        	} catch (NumberFormatException e) {
+	        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobUpdateIntervalInHours 
+							+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lUpdateIntervalInHours));
+	        	}
+	        	try {
+	        		lMonitorInervalInMinutes = lPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes);
+	        	} catch (NumberFormatException e) {
+	        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes 
+							+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lMonitorInervalInMinutes));
+	        	}
+	        }
+	        
+	        /**
+	         * 1. update lease job
+	         */
+			JobDetail lUpdateleaseJob = JobBuilder.newJob(Updatelease.class)
+				.withIdentity(Updatelease.class.getName() + sJobExt, sDefaultVCloudJobGroup)
+				.requestRecovery(true)
 				.build();
 		
-			SimpleTrigger lTestingTrigger = TriggerBuilder.newTrigger()
-				.withIdentity(Updatelease.class.getName() + "_Trigger", sDefaultVCloudTriggerGroup)
+			lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusConfigPath, 
+					System.getProperty(VCloudPlusRunner.sVCloudPlus));
+			
+			SimpleTrigger lUpdateleaseTrigger = TriggerBuilder.newTrigger()
+				.withIdentity(Updatelease.class.getName() + sTriggerExt, sDefaultVCloudTriggerGroup)
 				.startNow()
 				.withSchedule(SimpleScheduleBuilder.simpleSchedule()
-						.withIntervalInHours(24)
+						.withIntervalInHours(lUpdateIntervalInHours)
 						.repeatForever())
 				.build();
 			
-			JobKey lCheckJobKey = new JobKey(Updatelease.class.getName() + "_job", sDefaultVCloudJobGroup);
+			JobKey lCheckJobKey = new JobKey(Updatelease.class.getName() + sJobExt, sDefaultVCloudJobGroup);
 			if (!lStdScheduler.checkExists(lCheckJobKey))
-				lStdScheduler.scheduleJob(lTestingJob, lTestingTrigger);
+				lStdScheduler.scheduleJob(lUpdateleaseJob, lUpdateleaseTrigger);
+			
+			/**
+			 * 2. monitor db job
+			 */
+			JobDetail lMonitorDBJob = JobBuilder.newJob(ClusterMgt.class)
+					.withIdentity(ClusterMgt.class.getName() + sJobExt, sDefaultVCloudJobGroup)
+					.requestRecovery(true)
+					.build();
+			
+			SimpleTrigger lMonitorDBTrigger = TriggerBuilder.newTrigger()
+					.withIdentity(ClusterMgt.class.getName() + sTriggerExt, sDefaultVCloudTriggerGroup)
+					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
+							.withIntervalInMinutes(lMonitorInervalInMinutes)
+							.repeatForever())
+					.startNow()
+					.build();
+			
+			lCheckJobKey = new JobKey(ClusterMgt.class.getName() + sJobExt, sDefaultVCloudJobGroup);
+			if (!lStdScheduler.checkExists(lCheckJobKey))
+				lStdScheduler.scheduleJob(lMonitorDBJob, lMonitorDBTrigger);
+			
+			/**
+			 * 3. need adding job listener
+			 */
+//			lStdScheduler.getListenerManager()
+//				.addJobListener(jobListener, );
 			
 			lStdScheduler.getListenerManager()
 				.addSchedulerListener(new BasicScheduleListener(lStdScheduler));
@@ -122,6 +193,12 @@ public final class VCloudPlusRunner implements Runnable {
 		log.info("vcloudplus runner is shut down");
 	}
 
+	@Override
+	public void update(Observable o, Object arg) {
+		
+		
+	}
+	
 	/**
 	 * @param args
 	 */
@@ -131,13 +208,21 @@ public final class VCloudPlusRunner implements Runnable {
 		if (lLog4JConfig == null)
 		{
 			System.setProperty(VCloudPlusRunner.sLog4J, 
-					"file:" + System.getProperty("user.dir") + "/config/log4j.properties");
+					sDefaultLog4JPath);
 		}
+		
 		String lQuartzConfig = System.getProperty(VCloudPlusRunner.sQuartz);
 		if (lQuartzConfig == null)
 		{
 			System.setProperty(VCloudPlusRunner.sQuartz, 
-					System.getProperty("user.dir") + "/config/quartz_node.properties");
+					sDefaultQuartzPath);
+		}
+		
+		String lVCloudPlusConfig = System.getProperty(VCloudPlusRunner.sVCloudPlus);
+		if (lVCloudPlusConfig == null)
+		{
+			System.setProperty(VCloudPlusRunner.sVCloudPlus, 
+					sDefaultVCloudPlusPath);
 		}
 		
 		final Logger log = LoggerFactory.getLogger("main");
