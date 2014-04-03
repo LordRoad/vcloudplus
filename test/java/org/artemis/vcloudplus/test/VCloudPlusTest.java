@@ -39,11 +39,11 @@ import com.vmware.vcloud.sdk.Vapp;
 import com.vmware.vcloud.sdk.Vdc;
 
 /**
- * VCloudTest TODO
- * VCloudTest.java is written at Sep 29, 2013
+ * VCloudPlusTest TODO
+ * VCloudPlusTest.java is written at Sep 29, 2013
  * @author junli
  */
-public class VCloudTest {
+public class VCloudPlusTest {
 
 	/**
 	 * @param args

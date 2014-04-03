@@ -46,6 +46,7 @@ import com.vmware.vcloud.sdk.Vdc;
 public class Updatelease implements Job {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	
+	public static String sVCloudPlusUpdateInfo = "VCloudPlusUpdateInfo";
 	public static String sVCloudPlusConfigPath = "VCloudPlusConfigPath";
 	public static String sDefaultVCloudPlusConfigPath = "./config/vcloudplus.properties";
 	

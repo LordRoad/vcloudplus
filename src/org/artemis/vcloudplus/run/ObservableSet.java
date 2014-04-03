@@ -17,8 +17,6 @@
  */
 package org.artemis.vcloudplus.run;
 
-import java.util.Observer;
-
 import org.artemis.vcloudplus.en.VCloudPlusEvents;
 
 /**
@@ -50,10 +48,12 @@ public abstract class ObservableSet {
 	
 	protected abstract void setChanged(VCloudPlusEvents e);
 	
-	protected abstract void clearChanged();
+	protected abstract void clearChanged(VCloudPlusEvents e);
 	
 	protected abstract boolean hasChanged(VCloudPlusEvents e);
 	
 	protected abstract int countObservers();
+	
+	protected abstract int countObservers(VCloudPlusEvents e);
 	
 }

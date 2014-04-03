@@ -15,23 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.artemis.vcloudplus.test;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
+package org.artemis.vcloudplus.run;
 
 /**
- * VCloudTestSuite test suite
- * VCloudTestSuite.java is written at Dec 5, 2013
+ * Observer keep same interface as jdk observer
+ * 
+ * @see java.util.Observer
+ * 
+ * Observer.java is written at Apr 1, 2014
  * @author junli
+ * @deprecated
  */
-public final class VCloudTestSuite {
-	
-	public static Test suite () {
-		
-		TestSuite lVCloudTestSuite = new TestSuite(VCloudTestSuite.class.getName());
-		
-		return lVCloudTestSuite;
-	}
-	
+@Deprecated
+public interface Observer {
+    /**
+     * This method is called whenever the observed object is changed. An
+     * application calls an <tt>Observable</tt> object's
+     * <code>notifyObservers</code> method to have all the object's
+     * observers notified of the change.
+     *
+     * @param   o     the ObservableSet object.
+     * @param   arg   an argument passed to the <code>notifyObservers</code>
+     *                 method.
+     */
+    void update(ObservableSet o, Object arg);
 }

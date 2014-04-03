@@ -26,7 +26,10 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import org.artemis.vcloudplus.en.VCloudPlusRunner;
+import org.artemis.vcloudplus.common.BasicConnectionProvider;
+import org.artemis.vcloudplus.common.SystemConfig;
+import org.artemis.vcloudplus.en.VCloudPlusEvents;
+import org.artemis.vcloudplus.en.VCloudPlusEventsCenter;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -49,7 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ClusterMgt implements Job {
 	private final Logger log = LoggerFactory.getLogger(getClass());
-
+	
 	private boolean initDataSources(Properties iProps) {
 
 		PropertiesParser cfg = new PropertiesParser(iProps);
@@ -61,12 +64,15 @@ public class ClusterMgt implements Job {
 			PropertiesParser pp = new PropertiesParser(cfg.getPropertyGroup(
 					StdSchedulerFactory.PROP_DATASOURCE_PREFIX + "."
 							+ dsNames[i], true));
-
-			String cpClass = pp.getStringProperty(
-					StdSchedulerFactory.PROP_CONNECTION_PROVIDER_CLASS, null);
+			
+			/**
+			 * it's not be used for now
+			 */
+			//String cpClass = pp.getStringProperty(
+			//		StdSchedulerFactory.PROP_CONNECTION_PROVIDER_CLASS, null);
 
 			// custom connectionProvider... not supported
-			if (cpClass != null) {
+			//if (cpClass != null) {
 				// ConnectionProvider cp = null;
 				// try {
 				// cp = (ConnectionProvider)
@@ -94,7 +100,7 @@ public class ClusterMgt implements Job {
 				//
 				// dbMgr = DBConnectionManager.getInstance();
 				// dbMgr.addConnectionProvider(dsNames[i], cp);
-			} else {
+			//} else {
 				String dsJndi = pp.getStringProperty(
 						StdSchedulerFactory.PROP_DATASOURCE_JNDI_URL, null);
 
@@ -157,8 +163,12 @@ public class ClusterMgt implements Job {
 					}
 				}
 				try {
-					PoolingConnectionProvider cp = new PoolingConnectionProvider(
+					BasicConnectionProvider cp = new BasicConnectionProvider(
 							pp.getUnderlyingProperties());
+					
+					// set 16s for connection timeout
+					cp.setCheckoutTimeout(16 * 1000);
+					
 					dbMgr = DBConnectionManager.getInstance();
 					dbMgr.addConnectionProvider(dsNames[i], cp);
 					
@@ -170,7 +180,7 @@ public class ClusterMgt implements Job {
 					log.warn(e.getLocalizedMessage());
 					return false;
 				}
-			}
+			//}
 			
 			// try to connect
 			try {
@@ -196,11 +206,12 @@ public class ClusterMgt implements Job {
 	@Override
 	public void execute(JobExecutionContext context)
 			throws JobExecutionException {
-
+		log.trace("run cluster monitor job");
+		
 		/**
 		 * get node configuration
 		 */
-		String requestedFile = System.getProperty(VCloudPlusRunner.sQuartz);
+		String requestedFile = System.getProperty(SystemConfig.sQuartz);
 		String propFileName = requestedFile != null ? requestedFile
 				: "./config/quartz_node.properties";
 		File propFile = new File(propFileName);
@@ -215,8 +226,11 @@ public class ClusterMgt implements Job {
 			if (!initDataSources(props)) {
 				// db still can not be connected, continue running in-memory mode
 				log.info("db still can not be connected, continue running in-memory mode");
+			} else {
+				// now database is online, notify observers
+				VCloudPlusEventsCenter.Instance().TriggerEvents(VCloudPlusEvents.VCloudPlusDBIsOnLine);
+				VCloudPlusEventsCenter.Instance().notifyObservers(VCloudPlusEvents.VCloudPlusDBIsOnLine, Boolean.TRUE);
 			}
-			
 		} catch (FileNotFoundException e) {
 			log.warn(e.getLocalizedMessage());
 	
@@ -231,6 +245,8 @@ public class ClusterMgt implements Job {
 				}
 			}
 		}
+		
+		log.trace("end of cluster monitor job");
 	}
 
 }

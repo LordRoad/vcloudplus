@@ -35,12 +35,12 @@ import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
 /**
- * VCloudClusterTest TODO
- * VCloudClusterTest.java is written at Mar 24, 2014
+ * VCloudPlusClusterTest TODO
+ * VCloudPlusClusterTest.java is written at Mar 24, 2014
  * @author junli
  */
 @RunWith(JUnit4.class)
-public class VCloudClusterTest {
+public class VCloudPlusClusterTest {
 
 	private static String sLog4J = "log4j.configuration";
 	private static String sQuartz = "org.quartz.properties";
@@ -48,16 +48,16 @@ public class VCloudClusterTest {
 	@Test
 	public void SingleNode()
 	{
-		String lLog4JConfig = System.getProperty(VCloudClusterTest.sLog4J);
+		String lLog4JConfig = System.getProperty(VCloudPlusClusterTest.sLog4J);
 		if (lLog4JConfig == null)
 		{
-			System.setProperty(VCloudClusterTest.sLog4J, 
+			System.setProperty(VCloudPlusClusterTest.sLog4J, 
 					"file:" + System.getProperty("user.dir") + "/config/log4j.properties");
 		}
-		String lQuartzConfig = System.getProperty(VCloudClusterTest.sQuartz);
+		String lQuartzConfig = System.getProperty(VCloudPlusClusterTest.sQuartz);
 		if (lQuartzConfig == null)
 		{
-			System.setProperty(VCloudClusterTest.sQuartz, 
+			System.setProperty(VCloudPlusClusterTest.sQuartz, 
 					System.getProperty("user.dir") + "/config/quartz_node_1.properties");
 		}
 		

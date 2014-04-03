@@ -19,12 +19,12 @@ package org.artemis.vcloudplus.en;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Observer;
+import java.util.Map.Entry;
 
 import org.artemis.vcloudplus.run.ObservableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.artemis.vcloudplus.run.Observer;
 
 /**
  * VCloudPlusEventsCenter events center to trigger some events or notify some changes.
@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("deprecation")
 public class VCloudPlusEventsCenter extends ObservableSet {
-	private final Logger log = LoggerFactory.getLogger(getClass());
 	
 	/**
 	 * check if status of current event has been changed and do synchronization 
@@ -64,6 +63,15 @@ public class VCloudPlusEventsCenter extends ObservableSet {
 		}
 	}
 
+	/**
+	 * set event to changed status. Usually, caller will call notifyObservers
+	 * @see notifyObservers#method(VCloudPlusEvents, Object)
+	 * @param e
+	 */
+	public void TriggerEvents(VCloudPlusEvents e) {
+		setChanged(e);
+	}
+	
 	@Override
 	public void addObserver(VCloudPlusEvents e, Observer o) {
 		if (mChanged.containsKey(e)) {
@@ -103,7 +111,22 @@ public class VCloudPlusEventsCenter extends ObservableSet {
 
 	@Override
 	public void notifyObservers(VCloudPlusEvents e, Object arg) {
-		
+		if (mChanged.containsKey(e)) {
+			Object[] lObserverArray;
+			Boolean lChanged = mChanged.get(e);
+			synchronized(lChanged) {
+				if (lChanged == Boolean.FALSE) {
+					return;
+				}
+				lObserverArray = mObservers.get(e).toArray();
+				clearChanged(e);
+			}
+			for (int iter = 0; iter < lObserverArray.length; ++iter) {
+				if (lObserverArray[iter] != null) {
+					((Observer)lObserverArray[iter]).update(this, arg);
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -134,9 +157,13 @@ public class VCloudPlusEventsCenter extends ObservableSet {
 	}
 
 	@Override
-	protected void clearChanged() {
-		
-	}
+	protected void clearChanged(VCloudPlusEvents e) {
+		if (mChanged.containsKey(e)) {
+			synchronized(mChanged.get(e)) {
+				mChanged.put(e, Boolean.FALSE);
+			}
+		}
+	}	
 
 	@Override
 	protected boolean hasChanged(VCloudPlusEvents e) {
@@ -148,7 +175,21 @@ public class VCloudPlusEventsCenter extends ObservableSet {
 
 	@Override
 	protected int countObservers() {
-		
-	}	
+		Iterator<Entry<VCloudPlusEvents, HashSet<Observer>>> lObserverIterator = 
+				mObservers.entrySet().iterator();
+		int lTotalCount = 0;
+		while (lObserverIterator.hasNext()) {
+			lTotalCount += lObserverIterator.next().getValue().size();
+		}
+		return lTotalCount;
+	}
+
+	@Override
+	protected int countObservers(VCloudPlusEvents e) {
+		if (mChanged.containsKey(e)) {
+			return mObservers.get(e).size();
+		}
+		return 0;
+	}
 	
 }
