@@ -17,9 +17,14 @@
  */
 package org.artemis.vcloudplus.task;
 
+import java.util.Properties;
+
+import org.artemis.vcloudplus.common.SystemConfig;
+import org.artemis.vcloudplus.util.ConfigureReader;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobListener;
+import org.quartz.utils.PropertiesParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +67,38 @@ public class UpdateleaseListener implements JobListener {
 	public void jobWasExecuted(JobExecutionContext arg0,
 			JobExecutionException arg1) {
 		log.info(this.getName() + " was executed");
+		
+		/**
+		 * after execution, send information to user. i have to let it go now. there is no time for this
+		 */
+//		try {
+//			String lUpdateInfo = (String)arg0.getJobDetail().getJobDataMap().get(Updatelease.sVCloudPlusUpdateInfo);
+//			
+//			ConfigureReader lConfigureReader = new ConfigureReader();
+//			Properties lProperties = lConfigureReader.Read(System.getProperty(SystemConfig.sVCloudPlus));
+//			
+//			PropertiesParser lVCloudPlus = lConfigureReader.GetGroup(lProperties, SystemConfig.sVCloudPlusGroup);
+//			String lEmail = lVCloudPlus.getStringProperty(SystemConfig.sVCloudPlusEmailAccount);
+//			
+//			PropertiesParser lSMTPServer = lConfigureReader.GetGroup(lProperties, SystemConfig.sVCloudPlusSMTPServer);
+//			
+//			String lSMTPServerHost = lVCloudPlus.getStringProperty(SystemConfig.sVCloudPlusSMTPServerHost);
+//			int lSMTPServerPort = lVCloudPlus.getIntProperty(SystemConfig.sVCloudPlusSMTPServerPort);
+//			String lSMTPServerAccount = lVCloudPlus.getStringProperty(SystemConfig.sVCloudPlusSMTPServerAccount);
+//			String lSMTPServerPassWord = lVCloudPlus.getStringProperty(SystemConfig.sVCloudPlusSMTPServerPassWord);
+//			
+//			if (lEmail != null) {
+//				Properties props = new Properties();
+//			    props.put("mail.smtp.auth", "true");
+//			    props.put("mail.smtp.starttls.enable", "true");
+//			    props.put("mail.smtp.host", lSMTPServerHost);
+//			    props.put("mail.smtp.port", lSMTPServerPort);
+//				
+//				
+//			}
+//		} catch (Exception e) {
+//			log.error(e.getLocalizedMessage());
+//		}
 	}
 
 }
