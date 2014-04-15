@@ -19,6 +19,7 @@ package org.artemis.vcloudplus.run;
 
 import java.util.Date;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * Task: the task design is referred to Roller inner task
@@ -26,28 +27,35 @@ import java.util.Properties;
  * @author junli
  */
 public abstract class Task implements Runnable {
-	public String mTaskName = "";
+	public String mTaskName = UUID.randomUUID().toString();
 	
 	public void init(String iTaskName) {
 		mTaskName = iTaskName;
 	}
 	
 	/**
-	 * get task name
+	 * get task name, if not set, it will be random UUID.
 	 * @return
 	 */
 	public final String getTaskName() {
 		return mTaskName;
 	}
 
+	/**
+	 * How many times task will be executed.		
+	 * 
+	 * @return < 0, means repeat forever, = 0 will be run once 
+	 */
+	public abstract long getRepeatCount();
+	
 	 /**
-     * How often should the task run, in minutes.
+     * How often should the task run, in seconds.
      *
-     * example: 60 means this task runs once every hour.
+     * example: 60 means this task runs once every minute.
      *
      * @return The interval the task should be run at, in minutes.
      */
-    public abstract int getInterval();
+    public abstract long getInterval();
 	
     /**
      * Get the time, in minutes, this task wants to be leased for.
@@ -57,6 +65,12 @@ public abstract class Task implements Runnable {
      * @return The time this task should lease its lock for, in minutes.
      */
     public abstract int getLeaseTime();
+    
+    /**
+     * set task status keeper to current task for updating scheduled task
+     * @param iTaskStatus
+     */
+    public abstract void setStatus(TaskStatus iTaskStatusKeeper);
     
     /**
      * get begin of task
@@ -69,8 +83,14 @@ public abstract class Task implements Runnable {
      * not supported now
      * @return
      */
-    protected Properties getTaskProperties() {
-    	return null;
+    public Properties getTaskProperties() {
+    	Properties lProperties = new Properties();
+    	lProperties.put("taskname", this.getClass().getName() + ":" + this.getTaskName());
+    	lProperties.put("repeats", Long.toString(this.getRepeatCount()));
+    	lProperties.put("interval (sec)", Long.toString(this.getInterval()));
+    	lProperties.put("start", this.getStartTime());
+    	
+    	return lProperties;
     }
     
 }
