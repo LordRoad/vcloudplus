@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -52,6 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ClusterMgt implements Job {
 	private final Logger log = LoggerFactory.getLogger(getClass());
+	private boolean mIsDBOnline = true;
 	
 	private boolean initDataSources(Properties iProps) {
 
@@ -162,40 +164,50 @@ public class ClusterMgt implements Job {
 						return false;
 					}
 				}
+				
+				/**
+				 * 1. check if quartz c3p0 is existed
+				 */				
+				try {
+					dbMgr = DBConnectionManager.getInstance();
+					Connection lConnection = dbMgr.getConnection(dsNames[i]);
+					
+					lConnection.close();
+					return true;
+				} catch (SQLException sqle) {
+					// there is no data source in current db mgr
+				} catch (Exception e) {
+					
+				}
+				
+				/**
+				 * 2. create new connection pool to try connect to db
+				 */				
 				try {
 					BasicConnectionProvider cp = new BasicConnectionProvider(
 							pp.getUnderlyingProperties());
 					
-					// set 16s for connection timeout
-					cp.setCheckoutTimeout(16 * 1000);
+					// set 8s for connection timeout
+					cp.setCheckoutTimeout(8 * 1000);
+					cp.setDebugUnreturnedConnectionStackTraces(false);
 					
-					dbMgr = DBConnectionManager.getInstance();
-					dbMgr.addConnectionProvider(dsNames[i], cp);
+					Connection lConnection = cp.getConnection();
+					lConnection.close();
 					
+					cp.shutdown();
 				} catch (SQLException sqle) {
-					log.warn("Could not initialize DataSource: " + dsNames[i],
-							sqle);
 					return false;
 				} catch (SchedulerException e) {
-					log.warn(e.getLocalizedMessage());
 					return false;
 				}
 			//}
-			
-			// try to connect
-			try {
-				DBConnectionManager.getInstance().getConnection(dsNames[i]);
-				
-			} catch (SQLException e) {
-				log.warn("Cloud not connect: " + e.getLocalizedMessage());
-				return false;
-			} catch (Exception e) {
-				log.warn("Cloud not connect: " + e.getLocalizedMessage());
-				return false;
-			}
 		}
 		
 		return true;
+	}
+	
+	public boolean isDBOnline() {
+		return mIsDBOnline;
 	}
 
 	/*
@@ -213,7 +225,7 @@ public class ClusterMgt implements Job {
 		 */
 		String requestedFile = System.getProperty(SystemConfig.sQuartz);
 		String propFileName = requestedFile != null ? requestedFile
-				: "./config/quartz_node.properties";
+				: SystemConfig.sDefaultQuartzPath;
 		File propFile = new File(propFileName);
 		Properties props = new Properties();
 		InputStream in = null;
@@ -225,18 +237,27 @@ public class ClusterMgt implements Job {
 			}
 			if (!initDataSources(props)) {
 				// db still can not be connected, continue running in-memory mode
-				log.info("db still can not be connected, continue running in-memory mode");
+				log.info("db could not be connected, running in-memory mode");
+				
+				VCloudPlusEventsCenter.Instance().TriggerEvents(VCloudPlusEvents.VCloudPlusDBIsOnLine);
+				VCloudPlusEventsCenter.Instance().notifyObservers(VCloudPlusEvents.VCloudPlusDBIsOnLine, Boolean.FALSE);
+				
+				mIsDBOnline = false;
 			} else {
+				log.info("db is online, running in cluster mode");
+				
 				// now database is online, notify observers
 				VCloudPlusEventsCenter.Instance().TriggerEvents(VCloudPlusEvents.VCloudPlusDBIsOnLine);
 				VCloudPlusEventsCenter.Instance().notifyObservers(VCloudPlusEvents.VCloudPlusDBIsOnLine, Boolean.TRUE);
+				
+				mIsDBOnline = true;
 			}
 		} catch (FileNotFoundException e) {
 			log.warn(e.getLocalizedMessage());
-	
+			mIsDBOnline = false;
 		} catch (IOException e) {
 			log.warn(e.getLocalizedMessage());
-			
+			mIsDBOnline = false;
 		} finally {
 			if (in != null) {
 				try {

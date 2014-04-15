@@ -17,13 +17,17 @@
  */
 package org.artemis.vcloudplus.en;
 
+import java.util.Date;
 import java.util.List;
 
 import org.artemis.vcloudplus.common.BasicScheduleListener;
 import org.artemis.vcloudplus.common.SystemConfig;
+import org.artemis.vcloudplus.run.InnerScheduler;
 import org.artemis.vcloudplus.run.ObservableSet;
 import org.artemis.vcloudplus.run.Observer;
+import org.artemis.vcloudplus.run.SimpleJobScheduler;
 import org.artemis.vcloudplus.task.ClusterMgt;
+import org.artemis.vcloudplus.task.DBMonitorTask;
 import org.artemis.vcloudplus.task.Updatelease;
 import org.artemis.vcloudplus.task.UpdateleaseListener;
 import org.artemis.vcloudplus.util.ConfigureReader;
@@ -40,6 +44,7 @@ import org.quartz.SimpleTrigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.KeyMatcher;
+import org.quartz.utils.DBConnectionManager;
 import org.quartz.utils.PropertiesParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +59,8 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 	private final Logger log = LoggerFactory.getLogger(getClass());
 	
 	private Scheduler mScheduler = null;
+	private InnerScheduler mSimpleJobScheduler = new SimpleJobScheduler();
+	
 	private VCloudPlusError mPersistenceError = VCloudPlusError.NONE;
 	private VCloudPlusRunningMode mVCloudPlusRunningMode = VCloudPlusRunningMode.Cluster;
 	private boolean mDebug = false;
@@ -110,78 +117,18 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 	        ConfigureReader lConfigureReader = new ConfigureReader();
 	        PropertiesParser lPropertiesParser = lConfigureReader.GetGroup(System.getProperty(SystemConfig.sVCloudPlus), 
 	        		SystemConfig.sVCloudPlusJobGroup);
-	        
-	        int lUpdateIntervalInHours = SystemConfig.sDefaultVCloudPlusJobUpdateIntervalInHours;
-	        int lMonitorInervalInMinutes = SystemConfig.sDefaultVCloudPlusJobMonitorIntervalInMinutes;
-	        if (lPropertiesParser != null) {
-	        	try {
-	        		lUpdateIntervalInHours = lPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobUpdateIntervalInHours);
-	        	} catch (NumberFormatException e) {
-	        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobUpdateIntervalInHours 
-							+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lUpdateIntervalInHours));
-	        	}
-	        	try {
-	        		lMonitorInervalInMinutes = lPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes);
-	        	} catch (NumberFormatException e) {
-	        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes 
-							+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lMonitorInervalInMinutes));
-	        	}
-	        }
-	        
+	        	        			
 	        /**
 	         * 1. update lease job
 	         */
-	        JobKey lCheckJobKey;
-	        if (!mDebug) {
-				JobDetail lUpdateleaseJob = JobBuilder.newJob(Updatelease.class)
-					.withIdentity(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup)
-					.requestRecovery(true)
-					.build();
-			
-				lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusConfigPath, 
-						System.getProperty(SystemConfig.sVCloudPlus));
-				
-				// update info
-				lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusUpdateInfo, "record some update info");
-				
-				SimpleTrigger lUpdateleaseTrigger = TriggerBuilder.newTrigger()
-					.withIdentity(Updatelease.class.getName() + SystemConfig.sTriggerExt, SystemConfig.sDefaultVCloudTriggerGroup)
-					.startNow()
-					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
-							.withIntervalInHours(lUpdateIntervalInHours)
-							.withMisfireHandlingInstructionFireNow()
-							.repeatForever())
-					.build();
-				
-				lCheckJobKey = new JobKey(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup);
-				if (!mScheduler.checkExists(lCheckJobKey))
-					mScheduler.scheduleJob(lUpdateleaseJob, lUpdateleaseTrigger);
-				
-				mScheduler.getListenerManager()
-					.addJobListener(new UpdateleaseListener(), KeyMatcher.keyEquals(lCheckJobKey));
-	        }
-			
-			/**
+	        scheduleVCloudPlusJobs(lPropertiesParser);
+	        
+	        /**
 			 * 2. monitor db job
 			 */
-			JobDetail lMonitorDBJob = JobBuilder.newJob(ClusterMgt.class)
-					.withIdentity(ClusterMgt.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup)
-					.requestRecovery(true)
-					.build();
-			
-			SimpleTrigger lMonitorDBTrigger = TriggerBuilder.newTrigger()
-					.withIdentity(ClusterMgt.class.getName() + SystemConfig.sTriggerExt, SystemConfig.sDefaultVCloudTriggerGroup)
-					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
-							.withIntervalInMinutes(lMonitorInervalInMinutes)
-							.withMisfireHandlingInstructionFireNow()
-							.repeatForever())
-					.startNow()
-					.build();
-			
-			lCheckJobKey = new JobKey(ClusterMgt.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup);
-			if (!mScheduler.checkExists(lCheckJobKey))
-				mScheduler.scheduleJob(lMonitorDBJob, lMonitorDBTrigger);
-			
+	        //scheduleMonitorJobs(lPropertiesParser);
+	        scheduleMonitorJobs(mSimpleJobScheduler, lPropertiesParser);
+	        
 			/**
 			 * 3. need adding job listener
 			 */
@@ -200,24 +147,134 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 			}
 			
 			log.info("going to shutdown");
+			
+			mScheduler.pauseAll();
 			mScheduler.shutdown();
-		
+
 		} catch (JobPersistenceException e) {
 			// persistence exception, run it as in memory mode
 			log.error(e.getLocalizedMessage());
 			mPersistenceError = VCloudPlusError.NeedInMemory;
 			
 		} catch (SchedulerException e) {
-			e.printStackTrace();
 			log.error(e.getLocalizedMessage());
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.error(e.getLocalizedMessage());
+		} finally {
+			VCloudPlusEventsCenter.Instance().deleteObserver(VCloudPlusEvents.VCloudPlusDBIsOnLine, this);
+			// job scheduler will be shutdown if quartz scheduler is shutdown.
+			mSimpleJobScheduler.shutdown();
 		}
 		
-		VCloudPlusEventsCenter.Instance().deleteObserver(VCloudPlusEvents.VCloudPlusDBIsOnLine, this);
 		log.info("vcloudplus runner is shut down");
 	}
+	
+	/**
+	 * schedule all vcloudplus jobs
+	 * @param iPropertiesParser
+	 * @throws SchedulerException
+	 */
+	protected void scheduleVCloudPlusJobs(PropertiesParser iPropertiesParser) throws SchedulerException {
+		int lUpdateIntervalInHours = SystemConfig.sDefaultVCloudPlusJobUpdateIntervalInHours;
+		if (iPropertiesParser != null) {
+        	try {
+        		lUpdateIntervalInHours = iPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobUpdateIntervalInHours);
+        	} catch (NumberFormatException e) {
+        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobUpdateIntervalInHours 
+						+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lUpdateIntervalInHours));
+        	}
+		}
+		
+        JobKey lCheckJobKey;
+        if (!mDebug) {
+			JobDetail lUpdateleaseJob = JobBuilder.newJob(Updatelease.class)
+				.withIdentity(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup)
+				.requestRecovery(true)
+				.build();
+		
+			lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusConfigPath, 
+					System.getProperty(SystemConfig.sVCloudPlus));
+			
+			// update info
+			lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusUpdateInfo, "record some update info");
+			
+			SimpleTrigger lUpdateleaseTrigger = TriggerBuilder.newTrigger()
+				.withIdentity(Updatelease.class.getName() + SystemConfig.sTriggerExt, SystemConfig.sDefaultVCloudTriggerGroup)
+				.startNow()
+				.withSchedule(SimpleScheduleBuilder.simpleSchedule()
+						.withIntervalInHours(lUpdateIntervalInHours)
+						.withMisfireHandlingInstructionFireNow()
+						.repeatForever())
+				.build();
+			
+			lCheckJobKey = new JobKey(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup);
+			if (!mScheduler.checkExists(lCheckJobKey))
+				mScheduler.scheduleJob(lUpdateleaseJob, lUpdateleaseTrigger);
+			
+			mScheduler.getListenerManager()
+				.addJobListener(new UpdateleaseListener(), KeyMatcher.keyEquals(lCheckJobKey));
+        }
+	}
+	
+	/**
+	 * schedule monitor jobs 
+	 * @param iPropertiesParser
+	 * @throws SchedulerException
+	 * @deprecated Now, it will use simple job scheduler to monitor system
+	 */
+	@Deprecated
+	protected void scheduleMonitorJobs(PropertiesParser iPropertiesParser) throws SchedulerException {
+		int lMonitorInervalInMinutes = SystemConfig.sDefaultVCloudPlusJobMonitorIntervalInMinutes;
+		if (iPropertiesParser != null) {
+        	try {
+        		lMonitorInervalInMinutes = iPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes);
+        	} catch (NumberFormatException e) {
+        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes 
+						+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lMonitorInervalInMinutes));
+        	}
+        }
+		
+		JobDetail lMonitorDBJob = JobBuilder.newJob(ClusterMgt.class)
+				.withIdentity(ClusterMgt.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup)
+				.requestRecovery(true)
+				.build();
+		
+		SimpleTrigger lMonitorDBTrigger = TriggerBuilder.newTrigger()
+				.withIdentity(ClusterMgt.class.getName() + SystemConfig.sTriggerExt, SystemConfig.sDefaultVCloudTriggerGroup)
+				.withSchedule(SimpleScheduleBuilder.simpleSchedule()
+						.withIntervalInMinutes(lMonitorInervalInMinutes)
+						.withMisfireHandlingInstructionFireNow()
+						.repeatForever())
+				.startNow()
+				.build();
+		
+		JobKey lCheckJobKey = new JobKey(ClusterMgt.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup);
+		if (!mScheduler.checkExists(lCheckJobKey))
+			mScheduler.scheduleJob(lMonitorDBJob, lMonitorDBTrigger);
+		
+	}
+	
+	/**
+	 * schedule monitor jobs in to simple job scheduler
+	 * @param iInnerJobScheduler
+	 * @param iPropertiesParser
+	 * @throws Exception 
+	 */
+	protected void scheduleMonitorJobs(InnerScheduler iInnerJobScheduler, PropertiesParser iPropertiesParser) throws Exception {
+		int lMonitorInervalInMinutes = SystemConfig.sDefaultVCloudPlusJobMonitorIntervalInMinutes;
+		if (iPropertiesParser != null) {
+        	try {
+        		lMonitorInervalInMinutes = iPropertiesParser.getIntProperty(SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes);
+        	} catch (NumberFormatException e) {
+        		log.warn("failed to get " + SystemConfig.sVCloudPlusJobMonitorIntervalInMinutes 
+						+ e.getLocalizedMessage() + "\nuse default value: " + Integer.toString(lMonitorInervalInMinutes));
+        	}
+        }
+		
+		iInnerJobScheduler.schedule(new DBMonitorTask(-1, lMonitorInervalInMinutes * 60, new Date(), -1));
+		
+	}
+	
 	
 	/**
 	 * check if all other running jobs are done execution except caller
@@ -333,8 +390,18 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 		}
 		
 		VCloudPlusRunningMode lVCloudPlusRunningMode = VCloudPlusRunningMode.Cluster;
+		try {
+			ClusterMgt lTestingClusterMgt = new ClusterMgt();
+			lTestingClusterMgt.execute(null);
+			if (!lTestingClusterMgt.isDBOnline()) {
+				lVCloudPlusRunningMode = VCloudPlusRunningMode.Memory;
+			}
+		} catch (Exception e) {
+			lVCloudPlusRunningMode = VCloudPlusRunningMode.Memory;
+		}
 		
 		String lQuartzConfig;
+		
 		if (lVCloudPlusRunningMode == VCloudPlusRunningMode.Cluster) {
 			lQuartzConfig = System.getProperty(SystemConfig.sQuartz);
 			if (lQuartzConfig == null)
@@ -365,6 +432,7 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 			while (lRunning) {
 				VCloudPlusRunner lVCloudPlusRunner = new VCloudPlusRunner();
 				lVCloudPlusRunner.SetRunningMode(lVCloudPlusRunningMode);
+				
 				//lVCloudPlusRunner.EnableDebug();
 				
 				Thread lVCloudPlusThread = new Thread(lVCloudPlusRunner);
@@ -412,6 +480,8 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error(e.getLocalizedMessage());
+		} finally {
+			
 		}
 	}
 	

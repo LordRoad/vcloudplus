@@ -66,4 +66,8 @@ public class BasicConnectionProvider extends PoolingConnectionProvider {
 		this.getDataSource().setCheckoutTimeout(checkoutTimeout);
 	}
 	
+	public void setDebugUnreturnedConnectionStackTraces (boolean i) {
+		this.getDataSource().setDebugUnreturnedConnectionStackTraces(i);
+	}
+	
 }
