@@ -166,7 +166,7 @@ public class ClusterMgt implements Job {
 				}
 				
 				/**
-				 * 1. check if quartz c3p0 is existed
+				 * 1. check if quartz c3p0 is existed, then reuse connection pool
 				 */				
 				try {
 					dbMgr = DBConnectionManager.getInstance();
@@ -182,9 +182,10 @@ public class ClusterMgt implements Job {
 				
 				/**
 				 * 2. create new connection pool to try connect to db
-				 */				
+				 */			
+				BasicConnectionProvider cp = null;
 				try {
-					BasicConnectionProvider cp = new BasicConnectionProvider(
+					cp = new BasicConnectionProvider(
 							pp.getUnderlyingProperties());
 					
 					// set 8s for connection timeout
@@ -193,17 +194,27 @@ public class ClusterMgt implements Job {
 					
 					Connection lConnection = cp.getConnection();
 					lConnection.close();
-					
-					cp.shutdown();
+					return true;
 				} catch (SQLException sqle) {
 					return false;
 				} catch (SchedulerException e) {
 					return false;
+				} catch (Exception e) {
+					return false;
+				} finally {
+					if (cp != null) {
+						try {
+							cp.shutdown();
+						} catch (SQLException e) {
+							// ignore
+						}
+						cp = null;
+					}
 				}
 			//}
 		}
 		
-		return true;
+		return false;
 	}
 	
 	public boolean isDBOnline() {
@@ -221,9 +232,15 @@ public class ClusterMgt implements Job {
 		log.trace("run cluster monitor job");
 		
 		/**
-		 * get node configuration
+		 * get node configuration, since property will be cleared if running in memory mode
+		 * in debug env and release env, configuration files are organized differently. So using backup or default one
+		 *
+		 * The reason why we load configure file every time, may change the file and it costs very little resource.
 		 */
 		String requestedFile = System.getProperty(SystemConfig.sQuartz);
+		if (requestedFile == null) {
+			requestedFile = System.getProperty(SystemConfig.sQuartzBak);
+		}
 		String propFileName = requestedFile != null ? requestedFile
 				: SystemConfig.sDefaultQuartzPath;
 		File propFile = new File(propFileName);

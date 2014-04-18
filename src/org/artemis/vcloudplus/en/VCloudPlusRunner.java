@@ -44,7 +44,6 @@ import org.quartz.SimpleTrigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.KeyMatcher;
-import org.quartz.utils.DBConnectionManager;
 import org.quartz.utils.PropertiesParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,15 +91,15 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 		return mPersistenceError;
 	}
 	
-	protected void EnableDebug() {
+	public void EnableDebug() {
 		mDebug = true;
 	}
 	
-	protected void DisableDebug() {
+	public void DisableDebug() {
 		mDebug = false;
 	}
 	
-	protected void SetRunningMode(VCloudPlusRunningMode iVCloudPlusRunningMode) {
+	public void SetRunningMode(VCloudPlusRunningMode iVCloudPlusRunningMode) {
 		mVCloudPlusRunningMode = iVCloudPlusRunningMode;
 	}
 	
@@ -143,7 +142,7 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 				}
 				
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				// ignore
 			}
 			
 			log.info("going to shutdown");
@@ -353,10 +352,7 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 				// wait 30s for running jobs
 				wait4jobs(30 * 1000);
 				
-				// stop running current scheduler
-				synchronized (mScheduler) {
-					mScheduler.notifyAll();
-				}
+				shutdown();
 				log.info("change running mode of vcloudplus server from in-memory to cluster!");
 			} else {
 				/**
@@ -367,13 +363,17 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 					mVCloudPlusRunningMode = VCloudPlusRunningMode.Memory;
 					mPersistenceError = VCloudPlusError.NeedInMemory;
 					
-					// stop running current scheduler
-					synchronized (mScheduler) {
-						mScheduler.notifyAll();
-					}
+					shutdown();
 					log.info("change running mode of vcloudplus server from cluster to in-memory!");
 				}
 			}
+		}
+	}
+	
+	public void shutdown() {
+		// stop running current scheduler
+		synchronized (mScheduler) {
+			mScheduler.notifyAll();
 		}
 	}
 	
