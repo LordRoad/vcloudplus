@@ -1,0 +1,37 @@
+VCloudPlus supports windows, linux running as service. It can be run in stand alone or cluster based on mysql community edition. 
+And you can use other dbms with JDBC driver. If there is no db provided, all nodes will be run in stand alone mode. And all quartz configuration
+should be kept same. Current version contains inner scheduler for extra management such as monitor db which will change running mode.
+
+Folder:
+	bin\
+		vcloudplus.jar	main jar includes all dependency
+		vpsvr.exe		register vcloudplus into windows system running as service
+		service.bat		register batch (install or uninstall service)
+		svrdebug.bat	debug version, it will enable JMX service (9527), Remote Debug (9528), Heap dump etc.
+						you can change it by yourself.
+	config\
+		log4j.properties		log4j configuration
+		quartz_node.properties	quartz single node configuration, change it accordingly 
+		vcloudplus.properties	provide vcloudplus running environment, change it
+	dump\
+		dump path
+	log\
+		each log
+
+Running:
+	service.bat install (install vcloudplus as a service on windows)
+	service.bat uninstall (uninstall the service)
+		
+About dependency
+	mysql jdbc connector 5.1.26
+	quartz 2.2.1
+	slf4j 1.6.6
+	log4j 1.2.16
+	vcloud java sdk 5.1.0
+	c3p0 0.9.1.1
+
+suggest running vcloudplus with JDK 1.6 or later.
+	
+if any question or concerns, send email junli@microstrategy.com
+
+Li, junjun
