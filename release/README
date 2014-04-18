@@ -1,16 +1,16 @@
-VCloudPlus supports windows, linux running as service. It can be run in stand alone or cluster based on mysql community edition. 
+VCloudPlus supports windows running as service. It can be run in stand alone or cluster based on mysql community edition. 
 And you can use other dbms with JDBC driver. If there is no db provided, all nodes will be run in stand alone mode. And all quartz configuration
 should be kept same. Current version contains inner scheduler for extra management such as monitor db which will change running mode.
 
 Folder:
 	bin\
 		vcloudplus.jar	main jar includes all dependency
-		vpsvr.exe		register vcloudplus into windows system running as service
-		service.bat		register batch (install or uninstall service)
+		vpsvr.exe	register vcloudplus into windows system running as service
+		service.bat	register batch (install or uninstall service)
 		svrdebug.bat	debug version, it will enable JMX service (9527), Remote Debug (9528), Heap dump etc.
-						you can change it by yourself.
+				you can change it by yourself.
 	config\
-		log4j.properties		log4j configuration
+		log4j.properties	log4j configuration
 		quartz_node.properties	quartz single node configuration, change it accordingly 
 		vcloudplus.properties	provide vcloudplus running environment, change it
 	dump\
