@@ -9,6 +9,9 @@ Folder:
 		service.bat	register batch (install or uninstall service)
 		svrdebug.bat	debug version, it will enable JMX service (9527), Remote Debug (9528), Heap dump etc.
 				you can change it by yourself.
+		
+		dbTables\ db schema for different database, if needs to run in cluster mode, please create import one of these sql statements
+		
 	config\
 		log4j.properties	log4j configuration
 		quartz_node.properties	quartz single node configuration, change it accordingly 
