@@ -157,7 +157,7 @@ rem More extra parameters
 set "PR_LOGPATH=%VCLOUDPLUS_BASE%\log"
 set PR_STDOUTPUT=auto
 set PR_STDERROR=auto
-"%EXECUTABLE%" //US//%SERVICE_NAME% ++JvmOptions ";-Dvcplog.home=%VCLOUDPLUS_BASE%\log;-Dlog4j.configuration=file:%VCLOUDPLUS_BASE%/config/log4j.properties;-Dvcloudplus.properties=%VCLOUDPLUS_BASE%/config/vcloudplus.properties;-Dorg.quartz.properties=%VCLOUDPLUS_BASE%/config/quartz_node.properties" --JvmMs 32 --JvmMx 128
+"%EXECUTABLE%" //US//%SERVICE_NAME% ++JvmOptions "-Dvcplog.home=%VCLOUDPLUS_BASE%\log;-Dlog4j.configuration=file:%VCLOUDPLUS_BASE%/config/log4j.properties;-Dvcloudplus.properties=%VCLOUDPLUS_BASE%/config/vcloudplus.properties;-Dorg.quartz.properties=%VCLOUDPLUS_BASE%/config/quartz_node.properties" --JvmMs 32 --JvmMx 128
 echo The service '%SERVICE_NAME%' has been installed.
 
 
