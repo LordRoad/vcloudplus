@@ -50,9 +50,7 @@ should be kept same. Current version contains inner scheduler for extra manageme
 ### *basic framework*
 here is basic framework for version 0.1.
 
-<div style="text-align:center" markdown="1">
-![framework 0.1][vcloudplus framework 0.1]
-</div>
+![vcloudplus framework 0.1][vcloudplus framework 0.1]
 
 * `runner` : vcloudplus can be run as service (**only support windows**) or normal app.
 
@@ -71,10 +69,7 @@ here is basic framework for version 0.1.
 ### *cluster*
 cluster management in version 0.1 is based on quartz. using quartz cluster feature to support vcloudplus cluster.
 
-<div style="text-align:center" markdown="1">
-![cluster 0.1][vcloudplus cluster 0.1]
-</div>
-
+![vcloudplus cluster 0.1][vcloudplus cluster 0.1]
 
 ## future plan
 
