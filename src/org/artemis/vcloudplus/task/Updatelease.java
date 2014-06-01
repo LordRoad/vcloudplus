@@ -117,7 +117,14 @@ public class Updatelease implements Job {
 			 */
 			VAppHandle lVAppHandle = new VAppHandle();
 			for (String organizationName : lOrgSet) {
-				Vdc lVdc = VCloud.findVdc(organizationName, lDCName);
+				Vdc lVdc = null;
+				try
+				{
+					lVdc = VCloud.findVdc(organizationName, lDCName);
+				} catch (Exception e)
+				{
+					e.printStackTrace();
+				}
 				if (lVdc == null) {
 					log.warn("there is no data center in current organization: "
 									+ lOrgName);
@@ -130,6 +137,7 @@ public class Updatelease implements Job {
 			}
 			
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.error(e.getLocalizedMessage());
 		} finally {
 			try {

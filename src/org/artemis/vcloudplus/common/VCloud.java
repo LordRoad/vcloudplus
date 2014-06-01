@@ -66,9 +66,12 @@ public class VCloud {
 			UnrecoverableKeyException, NoSuchAlgorithmException,
 			KeyStoreException, VCloudException {
 
-		if (sVCloudClient != null) {
-			return sOrgNameMap;
-		}
+		// sometime later, token will be expired. 
+		// for now, do not use cache
+		//if (sVCloudClient != null) {
+		//	return sOrgNameMap;
+		//}
+		
 		VcloudClient.setLogLevel(Level.OFF);
 		//VcloudClient.setLogLevel(Level.INFO);
 
