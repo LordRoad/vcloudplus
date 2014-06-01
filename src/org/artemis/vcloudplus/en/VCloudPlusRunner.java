@@ -190,7 +190,7 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 				.withIdentity(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup)
 				.requestRecovery(true)
 				.build();
-		
+
 			lUpdateleaseJob.getJobDataMap().put(Updatelease.sVCloudPlusConfigPath, 
 					System.getProperty(SystemConfig.sVCloudPlus));
 			
@@ -207,8 +207,14 @@ public final class VCloudPlusRunner implements Observer, Runnable  {
 				.build();
 			
 			lCheckJobKey = new JobKey(Updatelease.class.getName() + SystemConfig.sJobExt, SystemConfig.sDefaultVCloudJobGroup);
-			if (!mScheduler.checkExists(lCheckJobKey))
+			if (!mScheduler.checkExists(lCheckJobKey)) {
 				mScheduler.scheduleJob(lUpdateleaseJob, lUpdateleaseTrigger);
+				log.info("job (name: " + Updatelease.class.getName() + SystemConfig.sJobExt
+						+ ", group: " + SystemConfig.sDefaultVCloudJobGroup
+						+ ", repeat: " + lUpdateleaseTrigger.getRepeatCount() + " , interval: "
+							+ lUpdateleaseTrigger.getRepeatInterval() + " . is scheduled.");
+			}
+				
 			
 			mScheduler.getListenerManager()
 				.addJobListener(new UpdateleaseListener(), KeyMatcher.keyEquals(lCheckJobKey));
