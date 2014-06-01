@@ -79,15 +79,15 @@ cluster management in version 0.1 is based on quartz. using quartz cluster featu
 ## future plan
 
 cluster management in [quartz][] is weak. i will use [zookeeper][] as cluster manager.
-And with zookeeper, it needs GUI (desktop or web) to cotrol cluster
+And with zookeeper, it needs GUI (desktop or web) to control cluster
 
 ## about
 
 it's a small tool to make things a little bit easy for software engineers and test engineers.
 any questions mail [me][] LOL. 
 
-[vcloudplus framework 0.1]: doc/pic/vcloudplus-framework-0.1.jpg
-[vcloudplus cluster 0.1]: doc/pic/vcloudplus-cluster-0.1.jpg
+[vcloudplus framework 0.1]: ./doc/pic/vcloudplus-framework-0.1.jpg
+[vcloudplus cluster 0.1]: ./doc/pic/vcloudplus-cluster-0.1.jpg
 [quartz]: http://quartz-scheduler.org/
 [zookeeper]: http://zookeeper.apache.org/
 [me]: junli@microstrategy.com
